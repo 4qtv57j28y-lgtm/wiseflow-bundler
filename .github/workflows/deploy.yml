@@ -1,0 +1,79 @@
+name: Deploy to Google Cloud Run
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+env:
+  PROJECT_ID:   ${{ secrets.GCP_PROJECT_ID }}
+  REGION:       europe-west2
+  SERVICE_NAME: wiseflow-bundler
+  IMAGE:        gcr.io/${{ secrets.GCP_PROJECT_ID }}/wiseflow-bundler
+  RUNTIME_SA:   bundler-runtime@${{ secrets.GCP_PROJECT_ID }}.iam.gserviceaccount.com
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write      # Required for Workload Identity Federation
+
+    steps:
+      - uses: actions/checkout@v4
+
+      # ── Auth via Workload Identity Federation ──────────────────────────────────
+      # No SA key file — GitHub gets a short-lived Google token automatically
+      - id: auth
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ secrets.GCP_WORKLOAD_PROVIDER }}
+          service_account:           ${{ secrets.GCP_DEPLOYER_SA }}
+
+      - uses: google-github-actions/setup-gcloud@v2
+
+      # ── Build React frontend ───────────────────────────────────────────────────
+      - name: Build frontend
+        run: |
+          cd frontend
+          npm ci
+          VITE_API_URL="" npm run build
+
+      # ── Build & push Docker image ──────────────────────────────────────────────
+      - name: Configure Docker
+        run: gcloud auth configure-docker gcr.io --quiet
+
+      - name: Build and push image
+        run: |
+          docker build \
+            -t $IMAGE:${{ github.sha }} \
+            -t $IMAGE:latest \
+            .
+          docker push $IMAGE:${{ github.sha }}
+          docker push $IMAGE:latest
+
+      # ── Deploy to Cloud Run ────────────────────────────────────────────────────
+      # Secrets come from Google Secret Manager — no secret values appear here
+      - name: Deploy to Cloud Run
+        run: |
+          gcloud run deploy $SERVICE_NAME \
+            --image=$IMAGE:${{ github.sha }} \
+            --platform=managed \
+            --region=$REGION \
+            --allow-unauthenticated \
+            --service-account=$RUNTIME_SA \
+            --memory=1Gi \
+            --cpu=1 \
+            --timeout=300 \
+            --max-instances=3 \
+            --set-env-vars="GOOGLE_CLOUD_PROJECT=${{ secrets.GCP_PROJECT_ID }}" \
+            --update-secrets="\
+              APP_PASSWORD=bundler-app-password:latest,\
+              JWT_SECRET=bundler-jwt-secret:latest,\
+              GCS_BUCKET=bundler-gcs-bucket:latest" \
+            --project=$PROJECT_ID
+
+      - name: Print URL
+        run: |
+          echo "✅ Live at: $(gcloud run services describe $SERVICE_NAME \
+            --region=$REGION --format='value(status.url)')"

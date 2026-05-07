@@ -1,0 +1,11 @@
+__pycache__/
+*.pyc
+.env
+*.db
+node_modules/
+frontend/dist/
+frontend_dist/
+sa-key.json
+*.zip
+*.pdf
+.DS_Store

@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>WISEflow MCQ Bundler — Leeds ISC</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Sora:wght@300;400;600;700&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --navy:   #0a1628;
+      --navy2:  #111f38;
+      --blue:   #1565c0;
+      --blue2:  #1e88e5;
+      --accent: #00e5ff;
+      --green:  #43a047;
+      --red:    #e53935;
+      --amber:  #f57c00;
+      --text:   #e8eaf6;
+      --muted:  #90a4ae;
+      --border: rgba(255,255,255,0.08);
+      --card:   rgba(255,255,255,0.04);
+      --radius: 12px;
+    }
+    html, body, #root { height: 100%; font-family: 'Sora', sans-serif; }
+    body { background: var(--navy); color: var(--text); }
+    code, .mono { font-family: 'DM Mono', monospace; }
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.15); border-radius: 3px; }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+  <script type="module" src="/src/main.jsx"></script>
+</body>
+</html>
